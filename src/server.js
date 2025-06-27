@@ -35,8 +35,40 @@ app.use('/api/chat', require('./routes/chatRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 
 // 💬 Real-time Chat via Socket.IO
+io.on('connection', (socket) => {
+  console.log('🔌 Socket connected:', socket.id);
 
-socketSetup(io);
+  socket.on('join', (userId) => {
+    socket.join(userId);
+  });
+
+  socket.on('sendMessage', async (data) => {
+    const { senderId, receiverId, content } = data;
+
+    try {
+      // Save message in DB
+      const message = new Message({ senderId, receiverId, content });
+      await message.save();
+
+      // Emit to receiver
+      io.to(receiverId).emit('receiveMessage', {
+        senderId,
+        receiverId,
+        content,
+        createdAt: message.createdAt,
+      });
+    } catch (err) {
+      console.error("Socket message save error:", err.message);
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log('❌ Socket disconnected:', socket.id);
+  });
+});
+
+// 🌍 Expose io if needed
+app.set('io', io);
 
 // 🚀 Start server
 const PORT = process.env.PORT || 7000;
