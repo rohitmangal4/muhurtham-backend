@@ -31,8 +31,6 @@ const socketSetup = (io) => {
     console.log('❌ Socket disconnected:', socket.id);
   });
 });
-
-app.set('io', io); 
 };
 
 module.exports = socketSetup;
